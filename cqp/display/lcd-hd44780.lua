@@ -15,6 +15,7 @@ function LCD:init(bus, id)
 	self.__cond = condition.new()
 	self.__output = nil
 	self.__control = BACKLIGHT
+	self.__old = {{},{}}
 	i2c.I2C_SLAVE(self.__fd, id)
 end
 
@@ -32,16 +33,16 @@ function LCD:goto_xy(x, y)
 end
 
 function LCD:paint(output)
-	-- Clear LCD
-	self:write_lcd(0x01)
-	cqueues.poll(0.002)
-
 	-- Send updates to screen
 	for y = 1, #output do
 		local str = output[y]
-		for x = 1, #str do
-			self:goto_xy(x-1, y-1)
-			self:write_lcd(str:sub(x,x):byte(), RS)
+		for x = 1, 16 do
+			local b = str:sub(x,x):byte() or 32
+			if b ~= self.__old[y][x] then
+				self:goto_xy(x-1, y-1)
+				self:write_lcd(b, RS)
+				self.__old[y][x] = b
+			end
 		end
 	end
 end
@@ -49,9 +50,10 @@ end
 function LCD:main()
 	-- Clear LCD
 	self:write_lcd(0x01)
-	cqueues.poll(0.002)
+	cqueues.poll(0.004)
 	-- Cursor & blink off
 	self:write_lcd(0x08 + 0x04)
+	cqueues.poll(0.002)
 
 	local out = nil
 	while true do
