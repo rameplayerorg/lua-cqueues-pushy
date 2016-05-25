@@ -48,9 +48,25 @@ function LCD:paint(output)
 end
 
 function LCD:main()
-	-- Clear LCD
+	-- Reset 4-bit mode
+	posix.write(self.__fd, string.char(0x30, E + 0x30, 0x30))
+	cqueues.poll(0.005)
+	posix.write(self.__fd, string.char(0x30, E + 0x30, 0x30))
+	cqueues.poll(0.00015)
+	posix.write(self.__fd, string.char(0x20, E + 0x20, 0x20))
+	cqueues.poll(0.00015)
+
+	-- Function set & Entry mode & Shift mode
+	self:write_lcd(0x20 + 0x08)
+	self:write_lcd(0x04 + 0x02)
+	self:write_lcd(0x10 + 0x00)
+
+	-- Home & Clear
+	self:write_lcd(0x02)
+	cqueues.poll(0.002)
 	self:write_lcd(0x01)
-	cqueues.poll(0.004)
+	cqueues.poll(0.002)
+
 	-- Cursor & blink off
 	self:write_lcd(0x08 + 0x04)
 	cqueues.poll(0.002)
