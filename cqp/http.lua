@@ -23,11 +23,13 @@ function M.get(ip, port, uri, cookies)
 		--print("|", hdr)
 	end
 	s:read("*l")
+	local res = {}
 	for line in s:lines("*L") do
+		table.insert(res, line)
 		--print("+", line)
 	end
 	s:close()
-	return tonumber(status, 10)
+	return tonumber(status, 10), table.concat(res, "\n")
 end
 
 return M
