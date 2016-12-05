@@ -16,7 +16,7 @@ local function limit(val, _min, _max)
 end
 
 local function scale(val)
-	return limit(50+50*val, 0, 99)
+	return limit(50+math.floor(50*val), 0, 99)
 end
 
 function PanasonicAW:init(ip)
@@ -68,12 +68,20 @@ function PanasonicAW:get_abs()
 	local pos, zoom
 	pos = self:aw_ptz(sync, "APC")
 	zoom = self:aw_ptz(sync, "GZ")
-	return pos:sub(4) .. zoom:sub(3)
+	if type(pos)  == "string" and string.len(pos)  == 11 and
+	   type(zoom) == "string" and string.len(zoom) == 5 then
+		return pos:sub(4) .. zoom:sub(3)
+	end
+	return nil
 end
 
 function PanasonicAW:goto_abs(pos)
-	self:aw_ptz(false, "APC", "%08s", pos:sub(1, 8))
-	self:aw_ptz(false, "AXZ", "%03s", pos:sub(9, 11))
+	if #pos == 11 then
+		self:aw_ptz(false, "APC", "%08s", pos:sub(1, 8))
+		self:aw_ptz(false, "AXZ", "%03s", pos:sub(9, 11))
+		return pos
+	end
+	return nil
 end
 
 function PanasonicAW:main()
@@ -83,7 +91,7 @@ function PanasonicAW:main()
 			local uri = ("/cgi-bin/aw_ptz?cmd=%%23%s%s&res=1"):format(val.cmd, val.val)
 			local status, res = http.get(self.__ip, 80, uri)
 			print("Posting", self.__ip, uri, status)
-			if status == 200 and self.__cmdqueue[seq] == val then
+			if (status == 200 or val.cond) and self.__cmdqueue[seq] == val then
 				-- ACK command from queue (unless we got new already)
 				self.__cmdqueue[seq] = nil
 			elseif status == nil then
