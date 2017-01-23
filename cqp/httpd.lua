@@ -124,7 +124,7 @@ local function handle_connection(params, con)
 			local content_type = (hdr["content-type"] or ""):match("^([^;]+)")
 			if content_type == "application/x-www-form-urlencoded" then
 				for key, val in body:gmatch("([^&=]+)=?([^&]+)") do
-					args[key] = val
+					args[key] = url.unescape(val)
 				end
 			elseif content_type == "application/json" then
 				args = json.decode(body)
