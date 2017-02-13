@@ -115,7 +115,7 @@ local function handle_connection(params, con)
 		end
 
 		local body = nil
-		if hdr["content-length"] then
+		if hdr["content-length"] and hdr["upload-filename"] == nil then
 			body = con:read(tonumber(hdr["content-length"]))
 		end
 
@@ -145,6 +145,29 @@ local function handle_connection(params, con)
 				args = args,
 				route = route_request,
 				path_pos = 1,
+				-- when header "Upload-Filename" exists, routed controller must call
+				-- read_file
+				read_file = function(func, chunk_size)
+					-- reads upload file in chunks
+					if hdr["content-length"] == nil or hdr["upload-filename"] == nil then return 0 end
+					local length = tonumber(hdr["content-length"])
+					chunk_size = chunk_size or length
+					con:setmode("bf") -- change socket input mode to binary
+					local received = 0
+					while received < length do
+						local l = chunk_size
+						if (length - received) < chunk_size then
+							l = length - received
+						end
+						local buf = con:read(l)
+						if buf ~= nil then
+							func(buf) -- chunk callback
+						end
+						received = received + l
+					end
+					con:setmode("tl") -- restore socket input mode to text
+					return length
+				end,
 			}
 			code, body = ctx:route(reply, params.uri, true)
 		else
