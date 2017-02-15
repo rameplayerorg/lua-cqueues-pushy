@@ -12,18 +12,29 @@ function CIP:init(ip)
 	self.__ipid = 3
 	self.__connected = false
 	self.power = push.property(nil, "RoomView Power")
+	self.avmute = push.property(nil, "RoomView AV-mute")
 	self.ack = push.property(false, "RoomView Command ack")
 	self.power:push_to(function(val)
 		-- power on  05 00 06 00 00 03 00 04 00
 		-- power off 05 00 06 00 00 03 00 05 00
 		self:digital_pulse(val and 0x0004 or 0x0005)
 	end)
+	self.avmute:push_to(function(val)
+		-- avmute on  05 00 06 00 00 03 00 46 14
+		-- avmute off 05 00 06 00 00 03 00 45 14
+		self:digital_pulse(val and 0x1446 or 0x1445)
+	end)
 end
 
-function CIP:send(msg, ...)
+function CIP:do_send(msg, ...)
 	local payload = string.char(...)
 	-- print(("XMIT 0x%02x, len: %d, data:%s"):format(msg, #payload, payload:gsub(".", function(s) return (" %02x"):format(s:byte(1)) end)))
 	self.__sock:write(struct.pack(">i1i2", msg, #payload) .. payload)
+end
+
+function CIP:send(msg, ...)
+	if not self.__connected then return end
+	self:do_send(msg, ...)
 end
 
 function CIP:digital_control(id, on)
@@ -31,7 +42,6 @@ function CIP:digital_control(id, on)
 end
 
 function CIP:digital_pulse(id)
-	if not self.__connected then return end
 	self:digital_control(id, true)
 	cqueues.poll(1.0)
 	self:digital_control(id, false)
@@ -75,7 +85,7 @@ function CIP:handle_0f(msg)
 	-- Processor response
 	if msg == string.char(0x02) then
 		-- IP ID Register request
-		self:send(0x01, 0x7f, 0x00, 0x00, 0x01, 0x00, self.__ipid, 0x40)
+		self:do_send(0x01, 0x7f, 0x00, 0x00, 0x01, 0x00, self.__ipid, 0x40)
 	end
 end
 
@@ -115,6 +125,7 @@ function CIP:main()
 		self.__sock:onerror(function(sock, method, error, level) return error end)
 		self.__sock:settimeout(5.0)
 		repeat until not self:recv()
+		self.__connected = false
 		self.__sock:close()
 
 		cqueues.sleep(5.0)
