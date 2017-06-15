@@ -16,7 +16,7 @@ local function limit(val, _min, _max)
 end
 
 local function scale(val)
-	return limit(50+math.floor(50*val), 0, 99)
+	return limit(50+math.floor(49*val), 1, 99)
 end
 
 function PanasonicAW:init(ip)
