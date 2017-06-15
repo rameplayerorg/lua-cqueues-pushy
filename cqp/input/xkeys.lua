@@ -6,6 +6,12 @@ local struct = require 'struct'
 local push = require 'cqp.push'
 local pfd = require 'cqp.posixfd'
 
+local function limit(val, _min, _max)
+	if val < _min then return _min end
+	if val > _max then return _max end
+	return val
+end
+
 local function map_led_value(val)
 	if val == 2 then return 2 end
 	return val and 1 or 0
@@ -116,11 +122,13 @@ function XKeys:main_xk(fd, devinfo)
 				local x, y, z, diff_z = struct.unpack(">bbB", res, devinfo.joy_offs)
 
 				diff_z = old_z and struct.unpack("b", struct.pack("b", 0x100 + z - old_z)) or 0
+				self.joystick.z_abs(limit(self.joystick.z_abs() + diff_z/256.0, 0.0, 1.0))
+
 				old_z = z
 
 				diff_z = diff_z * 200 / diff_ts / 32.0
-				diff_z = 0.2 * diff_z + 0.8 * self.joystick.z() or 0
-				if diff_z < 0.1 and diff_z > -0.1 then
+				diff_z = 0.3 * diff_z + 0.7 * self.joystick.z() or 0
+				if math.abs(diff_z) < 0.03 then
 					diff_z = 0
 				else
 					timeout = 0.08
@@ -130,7 +138,6 @@ function XKeys:main_xk(fd, devinfo)
 				self.joystick.x( x / 128.0)
 				self.joystick.y(-y / 128.0)
 				self.joystick.z(diff_z)
-				self.joystick.z_abs((z - 128.0) / 128.0)
 			end
 
 		end
