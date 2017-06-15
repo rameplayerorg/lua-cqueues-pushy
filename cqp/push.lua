@@ -101,13 +101,17 @@ function P.action.threshold(threshold_time, on_short, on_long)
 			if property() then
 				if cond:wait(threshold_time) then
 					-- Short
-					on_short(true)
-					on_short(false)
+					if on_short then
+						on_short(true)
+						on_short(false)
+					end
 				else
 					-- Timeout, long
-					on_long(true)
-					while property() do cond:wait() end
-					on_long(false)
+					if on_long then
+						on_long(true)
+						while property() do cond:wait() end
+						on_long(false)
+					end
 				end
 			else
 				cond:wait()
@@ -130,12 +134,12 @@ function P.action.timed(action)
 	end
 end
 
-function P.action.mux(v, name, group)
+function P.action.mux(v, name, group, delay)
 	local p = P.property(v, name)
 	local o = nil
 
 	for i, v in pairs(group) do
-		v[1]:push_to(P.action.on(true, function() p(i) end))
+		v[1]:push_to(P.action.threshold(delay or 1.0, nil, function() p(i) end))
 	end
 
 	p:push_to(function(v)
