@@ -230,15 +230,17 @@ function XKeysManager:map_xkeys(devname, sysfsinfo, devinfo)
 	xkeys.__users = xkeys.__users + 1
 
 	cq.running():wrap(function()
+		cq.sleep(0.1)
 		local fd = pfd.open(("/dev/%s"):format(devname), "rw")
-		local method = (physinput == "input0" and devinfo.main or XKeys.main_extra)
-		method(xkeys, fd, devinfo)
-		fd:close()
-		xkeys:reset_state()
-		xkeys.__users = xkeys.__users - 1
-		if xkeys.__users == 0 then self.__phys[physid] = nil end
-		self.__phys[phys] = nil
-
+		if fd then
+			local method = (physinput == "input0" and devinfo.main or XKeys.main_extra)
+			method(xkeys, fd, devinfo)
+			fd:close()
+			xkeys:reset_state()
+			xkeys.__users = xkeys.__users - 1
+			if xkeys.__users == 0 then self.__phys[physid] = nil end
+			self.__phys[phys] = nil
+		end
 		print("Unbound", devname, physid, physinput, xkeys)
 	end)
 end
