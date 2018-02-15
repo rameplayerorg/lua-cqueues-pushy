@@ -143,6 +143,21 @@ function M.popen(...)
 	return posixfd.openfd(rfd, "r")
 end
 
+-- Same as M.popen but reads stderr instead of stdout
+function M.popen_err(...)
+	M.init()
+	local rfd, wfd = posix.pipe()
+	posix.fcntl(rfd, posix.F_SETFD, posix.FD_CLOEXEC)
+	posix.fcntl(rfd, posix.F_SETFL, posix.O_NONBLOCK)
+	local obj = setmetatable({
+		__cond = condition.new(),
+		__pid = spawn({stderr=wfd}, ...),
+	}, Async)
+	posix.close(wfd)
+	all_processes[obj.__pid] = obj
+	return posixfd.openfd(rfd, "r")
+end
+
 function M.popenw(...)
 	M.init()
 	local rfd, wfd = posix.pipe()
