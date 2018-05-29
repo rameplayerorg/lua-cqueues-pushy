@@ -140,7 +140,7 @@ function M.popen(...)
 	}, Async)
 	posix.close(wfd)
 	all_processes[obj.__pid] = obj
-	return posixfd.openfd(rfd, "r")
+	return posixfd.openfd(rfd, "r"), obj
 end
 
 -- Same as M.popen but reads stderr instead of stdout
@@ -155,7 +155,7 @@ function M.popen_err(...)
 	}, Async)
 	posix.close(wfd)
 	all_processes[obj.__pid] = obj
-	return posixfd.openfd(rfd, "r")
+	return posixfd.openfd(rfd, "r"), obj
 end
 
 function M.popenw(...)
@@ -169,7 +169,7 @@ function M.popenw(...)
 	}, Async)
 	posix.close(rfd)
 	all_processes[obj.__pid] = obj
-	return posixfd.openfd(wfd, "w")
+	return posixfd.openfd(wfd, "w"), obj
 end
 
 function M.run(...)
