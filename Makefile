@@ -2,7 +2,7 @@ LUA_VERSION = 5.2
 LUA = lua$(LUA_VERSION)
 
 ALL_LUA := $(wildcard cqp/*.lua cqp/*/*.lua)
-ALL_C := cqp/clib/modem.c cqp/clib/i2c.c
+ALL_C := cqp/clib/modem.c cqp/clib/i2c.c cqp/clib/timerfd.c
 
 all: cqp.so
 
